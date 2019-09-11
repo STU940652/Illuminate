@@ -1,0 +1,141 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+<meta name="description" content="">
+<meta name="author" content="">
+<!--<link rel="icon" href="../../favicon.ico">-->
+
+<title>Illuminate: Settings</title>
+
+<!-- Bootstrap core CSS -->
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+<!-- Custom styles for this template -->
+<!-- <link href="jumbotron-narrow.css" rel="stylesheet"> -->
+
+<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+<![endif]-->
+</head>
+<style>
+.input-group {
+    width: 100%;
+}
+</style>
+
+<script>
+function password_check(form) {
+    if (form.password.value.length > 3) {
+        document.getElementById('password_verify').style.visibility='visible';
+    
+        if (form.password.value == form.password2.value) {
+            document.getElementById('password_submit').disabled = false;
+        } else {
+            document.getElementById('password_submit').disabled = true;
+        }
+    } else {
+        document.getElementById('password_verify').style.visibility='hidden';
+        document.getElementById('password_submit').disabled = true;
+    }
+}
+</script>
+
+<body>
+
+<div class="container">
+    <div class="jumbotron">
+        <h1>Illuminate</h1>
+        <h2>Settings</h2>
+    </div>
+
+
+    <div class="row"><div class="col-lg-8"><form action="/settings" method="POST">
+        <div class="input-group">
+            <label for="ip_address">IP Address</label>
+            <div class="input-group">
+                <input id="ip_address"
+                        name="ip_address"
+                        value="{{ ip_address }}" 
+                        class="form-control" 
+                        aria-label="..." 
+                        oninput="document.getElementById('ip_address_submit').disabled=false;"></input>
+                <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit" id="ip_address_submit" disabled>Update</button>
+                </span>
+            </div>
+        </div>
+    </form></div></div>
+
+    <div class="row"><div class="col-lg-8"><form action="/settings" method="POST">
+        <div class="input-group">
+            <label for="tcp_port">Port</label>
+            <div class="input-group">
+                <input id="tcp_port"
+                        name="tcp_port"
+                        value="{{ tcp_port }}" 
+                        class="form-control" 
+                        aria-label="..." 
+                        oninput="document.getElementById('tcp_port_submit').disabled=false;"></input>
+                <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit" id="tcp_port_submit" disabled>Update</button>
+                </span>
+            </div>
+        </div>
+    </form></div></div>
+    
+    <div class="row"><div class="col-md-4"><form action="/settings" method="POST">
+        <div class="input-group">
+            <label for="user_name">User Name</label>
+            <div class="input-group">
+                <input name="user_name" 
+                    id="user_name"
+                    value="{{ user_name }}"  
+                    class="form-control" 
+                    oninput="document.getElementById('user_name_submit').disabled=false;"></input>
+                <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit" id="user_name_submit" disabled>Update</button>
+                </span>
+            </div>
+        </div>
+    </form></div></div>
+    <div class="row"><div class="col-md-4"><form action="/settings" method="POST">
+        <div class="input-group">
+            <label for="password">Change Password</label>
+            <input name="password" 
+                id="password"
+                type="password" 
+                placeholder="New Password"
+                class="form-control" 
+                oninput="password_check(this.form);"></input>
+            <div class="input-group" id="password_verify" style="visibility:hidden">
+                <input name="password2" 
+                    type="password"
+                    placeholder="Verify Password"
+                    class="form-control" 
+                    oninput="password_check(this.form);"></input>
+                <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit" id="password_submit" disabled>Update</button>
+                </span>
+            </div>
+        </div>
+    </form></div></div>
+    <div class="row"><div class="col-md-4"><form action="/logout">
+        <input type="submit" value="Log Out" class="btn btn-default"/>
+    </form></div></div>
+</div>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+<meta name="description" content="">
+<meta name="author" content="">
+<!--<link rel="icon" href="../../favicon.ico">-->
+
+<title>Illuminate: Settings</title>
+
+<!-- Bootstrap core CSS -->
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+<!-- Custom styles for this template -->
+<!-- <link href="jumbotron-narrow.css" rel="stylesheet"> -->
+
+<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+  <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+<![endif]-->
+</head>
+
+<script>
+var last_status = {"zone1_status": "OFF"};
+
+function mode_to_hidden(){
+    document.getElementById("event_name").style.display = "none";
+    document.getElementById("scoreboard").style.opacity = 0;
+}
+
+function mode_to_intro(){
+    // Need to hide event place and time column, show name
+    document.getElementById("event_name").style.display = "block";
+    document.getElementById("scoreboard_place_col").style.width = '0px';
+    document.getElementById("scoreboard_place_col").style.maxWidth = '0px';
+    document.getElementById("scoreboard_time_col").style.width = '0px';
+    document.getElementById("scoreboard_time_col").style.maxWidth = '0px';
+    document.getElementById("scoreboard_name_col").style.width = '400px';
+    document.getElementById("scoreboard_name_col").style.maxWidth = '400px';
+    document.getElementById("content_scoreboard_ad").style.opacity = 1;
+    if (document.getElementById("scoreboard").style.opacity != 1) {
+        setTimeout ( function() {
+            document.getElementById("scoreboard").style.opacity = 1;
+        }, 500);
+    }
+    setTimeout ( function() {
+        if (current_state == 1) document.getElementById("scoreboard_time_col").innerHTML = '';
+    }, 500);
+    
+    // Pause updates to scoreboard for 10 seconds
+    scoreboard_paused = true;
+    setTimeout (function() {scoreboard_paused = false;}, 10000);
+}
+
+</script>
+
+<style>
+.parent {
+  position: relative;
+  display: inline-block;
+  top: 0;
+  left: 0;
+}
+.image1 {
+  position: relative;
+  top: 0;
+  left: 0;
+}
+.image2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: opacity 0.5s;
+}
+
+body {
+    background-color: #000;
+}
+</style>
+
+<body style="margin:0px" onload="">
+<div class="container">
+    <div class="row"><div class="col-lg-8 jumbotron">
+        <h2><center>Zone 1</center></h2>
+        
+    </div></div>
+    
+    <div class="row"><div class="col-lg-8">
+        <div class=" center-block" style="width: fit-content;"><div class="parent">
+            <img src="{{url_for('static', filename='ON.jpg')}}"  class="image1" alt="ON">
+            <img src="{{url_for('static', filename='OFF.jpg')}}" class="image2" alt="OFF" id="zone1_status">
+        </div></div>
+    </div></div>
+            <p id=zone1_status></p>
+    <div class="row"><div class="col-lg-8">
+        <button class="btn btn-default btn-lg btn-block" type="button" onclick="socket.emit('turn_on',  {});">ON</button>
+        <button class="btn btn-default btn-lg btn-block" type="button" onclick="socket.emit('turn_off', {});">OFF</button>
+    </div></div>
+</div>
+
+</body>
+
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+<script type="text/javascript" charset="utf-8">
+    var s = {}
+
+    var socket = io.connect('http://' + document.domain + ':' + location.port + '/ws/zone1');
+    socket.on('connect', function() {});
+    
+    socket.on('update', (new_s) => {
+        
+        for (k in new_s) {
+            s[k]=new_s[k];
+        }
+        
+        var valid_fields = [
+            "zone1_status",
+        ];
+        
+        var message_keys = Object.keys(s);
+        
+        message_keys.forEach( (k) => {
+            if (last_status[k] != s[k]) {
+                if (valid_fields.indexOf(k) >= 0) {
+                    if (s[k] == "ON") {
+                        document.getElementById(k).style.opacity = 0;
+                    } else {
+                        document.getElementById(k).style.opacity = 1;
+                    }
+                    last_status[k] = s[k];
+                }
+            }
+        });
+    });        
+</script>
+
+</html>
