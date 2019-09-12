@@ -132,8 +132,13 @@ body {
                 if (valid_fields.indexOf(k) >= 0) {
                     if (s[k] == "ON") {
                         document.getElementById(k).style.opacity = 0;
+                        document.getElementById(k).style.transform = "";
+                    } else if (s[k] == "OFF"){
+                        document.getElementById(k).style.opacity = 1;
+                        document.getElementById(k).style.transform = "";
                     } else {
                         document.getElementById(k).style.opacity = 1;
+                        document.getElementById(k).style.transform = "rotate(180deg)";
                     }
                     last_status[k] = s[k];
                 }

@@ -6,12 +6,13 @@ import traceback
 import json
 import os.path
 import glob
-
+from pymodbus.client.sync import ModbusTcpClient
 
 DEBUG = False
 #DEBUG = True
 settings_file = './settings.json'
 main_thread = None
+modbus_client = None
 
 temp_on_off = 'OFF'
 
@@ -41,6 +42,14 @@ def load_settings():
     except: pass
 
 def send_event_info():
+    global temp_on_off
+    if not DEBUG:
+        try:
+            result = modbus_client.read_coils(1,1)
+            print(result.bits[0])
+            temp_on_off = "ON" if result.bits[0] else "OFF" 
+        except:
+            temp_on_off = "ERROR"
     socketio.emit('update', {"zone1_status": temp_on_off}, namespace='/ws/zone1')
 
 def main_thread_worker():
@@ -78,15 +87,26 @@ def ws_connect():
 @socketio.on('turn_on', namespace='/ws/zone1')
 def ws_turn_on(d):
     global temp_on_off
-    temp_on_off = "ON"
+    if DEBUG:
+        temp_on_off = "ON"
+    else:
+        try:
+            modbus_client.write_coil(1, True)
+        except:
+            pass
     send_event_info()
 
 @socketio.on('turn_off', namespace='/ws/zone1')
-def ws_turn_on(d):
+def ws_turn_off(d):
     global temp_on_off
-    temp_on_off = "OFF"
+    if DEBUG:
+        temp_on_off = "OFF"
+    else:
+        try:
+            modbus_client.write_coil(1, False)
+        except:
+            pass
     send_event_info()
-
         
 @app.route('/settings', methods=['POST', 'GET'])
 @flask_login.login_required
@@ -103,6 +123,11 @@ def route_settings():
         if modified:
             with open(settings_file, "wt") as f:
                 json.dump(settings, f, sort_keys=True, indent=4)
+                
+            # Restart MODBUS client
+            if modbus_client:   
+                modbus_client.close()
+            modbus_client = ModbusTcpClient('127.0.0.1')
  
     return flask.render_template('settings.html', 
                 **settings)
@@ -158,23 +183,17 @@ if __name__ == '__main__':
     
     load_settings()
 
-    parser = argparse.ArgumentParser(description='Provide HTML rendering of Coloado Timing System data.')
-    parser.add_argument('--port', '-p', action = 'store', default = '', 
-        help='Serial port input from CTS scoreboard')
-    parser.add_argument('--in', '-i', action = 'store', default = '', dest='in_file',
-        help='Input file to use instead of serial port')
-    parser.add_argument('--out', '-o', action = 'store', default = '', 
-        help='Output file to dump data')
-    parser.add_argument('--portlist', '-l', action = 'store_const', const=True, default = False,
-        help='List of available serial ports')        
-    parser.add_argument('--speed', '-s', action = 'store', default = 1.0, dest='in_speed',
-        help='Speed to play input file at')
+    parser = argparse.ArgumentParser(description='Web control for MODBUS/PowerLink devices.')
     parser.add_argument('--debug', '-d', action = 'store_const', const=True, default = False,
         help='Display debug info at console')
     args = parser.parse_args()
 
     try:
-        debug_console = args.debug
+        # Start Modbus Client
+        modbus_client = ModbusTcpClient('127.0.0.1')
+
+        # Start webserver
+        DEBUG = args.debug
         socketio.run(app, host="0.0.0.0")
     except:
         traceback.print_exc()
