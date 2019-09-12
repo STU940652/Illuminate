@@ -18,6 +18,7 @@ temp_on_off = 'OFF'
 settings = {
     'ip_address': '192.168.1.1',
     'tcp_port': 504,
+    'zone_title1': 'Zone 1',
     'username': 'admin',
     'password': 'password'
     }
@@ -104,9 +105,7 @@ def route_settings():
                 json.dump(settings, f, sort_keys=True, indent=4)
  
     return flask.render_template('settings.html', 
-                ip_address=settings['ip_address'], 
-                tcp_port=settings['tcp_port'],
-                user_name=settings['username'])
+                **settings)
                     
 # somewhere to login
 @app.route("/login", methods=["GET", "POST"])
@@ -144,11 +143,15 @@ def load_user(userid):
 # Serve the UI        
 @app.route('/zone<n>')
 def zone_control(n):
-    return flask.render_template("illuminate.html", zone_number=zone_number)
+    try:
+        zone_title = settings['zone_title' + str(n)]
+    except KeyError:
+        zone_title = "Zone " + str(n)
+    return flask.render_template("illuminate.html", zone_number=n, zone_title=zone_title)
 
 @app.route("/")
 def default_zone():
-    return flask.render_template("illuminate.html", zone_number="1")
+    return zone_control("1")
 
 if __name__ == '__main__':
     import argparse
