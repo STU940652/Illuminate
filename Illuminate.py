@@ -8,8 +8,18 @@ import os.path
 import glob
 from pymodbus.client.sync import ModbusTcpClient
 
+# simple user model
+class User(flask_login.UserMixin):
+    def __init__(self, id):
+        self.id = id
+        self.name = settings['username']
+        self.password = settings['password']
+        
+    def __repr__(self):
+        return "%d/%s" % (self.id, self.name)
+
+# Init Global variables
 DEBUG = False
-#DEBUG = True
 settings_file = './settings.json'
 main_thread = None
 modbus_client = None
@@ -25,6 +35,7 @@ settings = {
     }
 
 
+# Init Flask and family
 app = flask.Flask(__name__)
 # config
 app.config.update(
@@ -32,6 +43,14 @@ app.config.update(
     SECRET_KEY = 'rimnqiuqnewiornhf7nfwenjmqvliwynhtmlfnlsklrmqwe'
 )
 socketio = flask_socketio.SocketIO(app)
+
+# flask-login
+login_manager = flask_login.LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "route_login"
+
+# create the user       
+user = User(0)
 
 
 def load_settings():
@@ -56,26 +75,7 @@ def main_thread_worker():
     while True:
         send_event_info()
         socketio.sleep(2.0)    
-            
-# flask-login
-login_manager = flask_login.LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = "route_login"
-
-# simple user model
-class User(flask_login.UserMixin):
-    def __init__(self, id):
-        self.id = id
-        self.name = settings['username']
-        self.password = settings['password']
-        
-    def __repr__(self):
-        return "%d/%s" % (self.id, self.name)
-
-
-# create the user       
-user = User(0)
-            
+                        
 @socketio.on('connect', namespace='/ws/zone1')
 def ws_connect():
     global main_thread
@@ -127,7 +127,7 @@ def route_settings():
             # Restart MODBUS client
             if modbus_client:   
                 modbus_client.close()
-            modbus_client = ModbusTcpClient('127.0.0.1')
+            modbus_client = ModbusTcpClient(settings["ip_address"])
  
     return flask.render_template('settings.html', 
                 **settings)
@@ -177,24 +177,27 @@ def zone_control(n):
 @app.route("/")
 def default_zone():
     return zone_control("1")
+    
+def run_illuminate(debug=False):
+    global DEBUG
+    DEBUG = debug
+    load_settings()
+    
+    # Start Modbus Client
+    modbus_client = ModbusTcpClient(settings["ip_address"])
+    # Start webserver
+    socketio.run(app, host="0.0.0.0")
 
 if __name__ == '__main__':
     import argparse
     
-    load_settings()
-
     parser = argparse.ArgumentParser(description='Web control for MODBUS/PowerLink devices.')
     parser.add_argument('--debug', '-d', action = 'store_const', const=True, default = False,
         help='Display debug info at console')
     args = parser.parse_args()
 
     try:
-        # Start Modbus Client
-        modbus_client = ModbusTcpClient('127.0.0.1')
-
-        # Start webserver
-        DEBUG = args.debug
-        socketio.run(app, host="0.0.0.0")
+        run_illuminate(debug = args.debug)
     except:
         traceback.print_exc()
     finally:
