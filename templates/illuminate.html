@@ -28,40 +28,6 @@
 <![endif]-->
 </head>
 
-<script>
-var last_status = {"zone1_status": "OFF"};
-
-function mode_to_hidden(){
-    document.getElementById("event_name").style.display = "none";
-    document.getElementById("scoreboard").style.opacity = 0;
-}
-
-function mode_to_intro(){
-    // Need to hide event place and time column, show name
-    document.getElementById("event_name").style.display = "block";
-    document.getElementById("scoreboard_place_col").style.width = '0px';
-    document.getElementById("scoreboard_place_col").style.maxWidth = '0px';
-    document.getElementById("scoreboard_time_col").style.width = '0px';
-    document.getElementById("scoreboard_time_col").style.maxWidth = '0px';
-    document.getElementById("scoreboard_name_col").style.width = '400px';
-    document.getElementById("scoreboard_name_col").style.maxWidth = '400px';
-    document.getElementById("content_scoreboard_ad").style.opacity = 1;
-    if (document.getElementById("scoreboard").style.opacity != 1) {
-        setTimeout ( function() {
-            document.getElementById("scoreboard").style.opacity = 1;
-        }, 500);
-    }
-    setTimeout ( function() {
-        if (current_state == 1) document.getElementById("scoreboard_time_col").innerHTML = '';
-    }, 500);
-    
-    // Pause updates to scoreboard for 10 seconds
-    scoreboard_paused = true;
-    setTimeout (function() {scoreboard_paused = false;}, 10000);
-}
-
-</script>
-
 <style>
 .parent {
   position: relative;
@@ -73,12 +39,14 @@ function mode_to_intro(){
   position: relative;
   top: 0;
   left: 0;
+  opacity: 0;
 }
 .image2 {
   position: absolute;
   top: 0;
   left: 0;
   transition: opacity 0.5s;
+  opacity: 0;
 }
 
 body {
@@ -95,8 +63,9 @@ body {
     
     <div class="row"><div class="col-lg-8">
         <div class=" center-block" style="width: fit-content;"><div class="parent">
-            <img src="{{url_for('static', filename='ON.jpg')}}"  class="image1" alt="ON">
-            <img src="{{url_for('static', filename='OFF.jpg')}}" class="image2" alt="OFF" id="zone1_status">
+            <img src="{{url_for('static', filename='ERROR.jpg')}}"  class="image1" alt="ERROR" id="zone1_status_error">
+            <img src="{{url_for('static', filename='OFF.jpg')}}" class="image2" alt="OFF" id="zone1_status_off">
+            <img src="{{url_for('static', filename='ON.jpg')}}"  class="image2" alt="ON"  id="zone1_status_on">
         </div></div>
     </div></div>
             <p id=zone1_status></p>
@@ -110,41 +79,59 @@ body {
 
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
 <script type="text/javascript" charset="utf-8">
+    var last_status = {"zone1_status": ""};
     var s = {}
-
-    var socket = io.connect('http://' + document.domain + ':' + location.port + '/ws/zone1');
-    socket.on('connect', function() {});
-    
-    socket.on('update', (new_s) => {
+    var watchdog = 10;
+    var valid_fields = [
+        "zone1_status",
+    ];
         
-        for (k in new_s) {
-            s[k]=new_s[k];
-        }
-        
-        var valid_fields = [
-            "zone1_status",
-        ];
-        
+    function update(){
         var message_keys = Object.keys(s);
         
         message_keys.forEach( (k) => {
             if (last_status[k] != s[k]) {
                 if (valid_fields.indexOf(k) >= 0) {
                     if (s[k] == "ON") {
-                        document.getElementById(k).style.opacity = 0;
-                        document.getElementById(k).style.transform = "";
+                        document.getElementById(k+'_on').style.opacity = 1;
+                        document.getElementById(k+'_off').style.opacity = 1;
                     } else if (s[k] == "OFF"){
-                        document.getElementById(k).style.opacity = 1;
-                        document.getElementById(k).style.transform = "";
+                        document.getElementById(k+'_on').style.opacity = 0;
+                        document.getElementById(k+'_off').style.opacity = 1;
                     } else {
-                        document.getElementById(k).style.opacity = 1;
-                        document.getElementById(k).style.transform = "rotate(180deg)";
+                        // ERROR
+                        document.getElementById(k+'_on').style.opacity = 0;
+                        document.getElementById(k+'_off').style.opacity = 0;
+                        document.getElementById(k+'_error').style.opacity = 1;
                     }
                     last_status[k] = s[k];
                 }
             }
         });
-    });        
+
+    }
+
+    var socket = io.connect('http://' + document.domain + ':' + location.port + '/ws/zone1');
+    socket.on('connect', function() {});
+    
+    socket.on('update', (new_s) => {
+        watchdog = 10;
+        for (k in new_s) {
+            s[k]=new_s[k];
+        }
+        
+        update();
+        
+    }); 
+
+    setInterval( () => {
+        if (watchdog == 0) {
+            Object.keys(s).forEach( (k) => {s[k] = 'ERROR'});
+            update();
+        } else {
+            watchdog--;
+        }
+    }, 1000);
 </script>
 
 </html>
