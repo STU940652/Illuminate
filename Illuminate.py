@@ -65,10 +65,9 @@ def send_event_info():
     if not DEBUG:
         try:
             result = modbus_client.read_coils(0,1)
-            print(result.bits[0])
             temp_on_off = "ON" if result.bits[0] else "OFF" 
         except:
-            traceback.print_exec()
+            traceback.print_exc()
             temp_on_off = "ERROR"
     socketio.emit('update', {"zone1_status": temp_on_off}, namespace='/ws/zone1')
 
@@ -92,9 +91,10 @@ def ws_turn_on(d):
         temp_on_off = "ON"
     else:
         try:
-            modbus_client.write_coil(1, True)
+            modbus_client.write_coil(0, True)
         except:
-            pass
+            traceback.print_exc()
+
     send_event_info()
 
 @socketio.on('turn_off', namespace='/ws/zone1')
@@ -104,9 +104,9 @@ def ws_turn_off(d):
         temp_on_off = "OFF"
     else:
         try:
-            modbus_client.write_coil(1, False)
+            modbus_client.write_coil(0, False)
         except:
-            pass
+            traceback.print_exc()
     send_event_info()
         
 @app.route('/settings', methods=['POST', 'GET'])
@@ -180,7 +180,7 @@ def default_zone():
     return zone_control("1")
     
 def run_illuminate(debug=False):
-    global DEBUG
+    global DEBUG, modbus_client
     DEBUG = debug
     load_settings()
     
