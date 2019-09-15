@@ -64,10 +64,11 @@ def send_event_info():
     global temp_on_off
     if not DEBUG:
         try:
-            result = modbus_client.read_coils(1,1)
+            result = modbus_client.read_coils(0,1)
             print(result.bits[0])
             temp_on_off = "ON" if result.bits[0] else "OFF" 
         except:
+            traceback.print_exec()
             temp_on_off = "ERROR"
     socketio.emit('update', {"zone1_status": temp_on_off}, namespace='/ws/zone1')
 
@@ -111,7 +112,7 @@ def ws_turn_off(d):
 @app.route('/settings', methods=['POST', 'GET'])
 @flask_login.login_required
 def route_settings():
-    global settings
+    global settings, modbus_client
     if flask.request.method == 'POST':
         modified = False
         
