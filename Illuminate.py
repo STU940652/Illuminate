@@ -64,7 +64,7 @@ def send_event_info():
     global temp_on_off
     if not DEBUG:
         try:
-            result = modbus_client.read_coils(0,1)
+            result = modbus_client.read_coils(17,1)
             temp_on_off = "ON" if result.bits[0] else "OFF" 
         except:
             traceback.print_exc()
@@ -91,7 +91,7 @@ def ws_turn_on(d):
         temp_on_off = "ON"
     else:
         try:
-            modbus_client.write_coil(0, True)
+            modbus_client.write_coil(17, True)
         except:
             traceback.print_exc()
 
@@ -104,7 +104,7 @@ def ws_turn_off(d):
         temp_on_off = "OFF"
     else:
         try:
-            modbus_client.write_coil(0, False)
+            modbus_client.write_coil(17, False)
         except:
             traceback.print_exc()
     send_event_info()
