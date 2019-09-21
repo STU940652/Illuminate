@@ -54,8 +54,11 @@ class IlluminateService(win32serviceutil.ServiceFramework):
                                   servicemanager.PYS_SERVICE_STARTED,
                                   (self._svc_name_, ''))
             self.subprocess = subprocess.Popen(r'py -3 Illuminate.py', 
-                cwd = os.path.dirname(os.path.realpath(__file__)))
-            self.subprocess.wait()
+                cwd = os.path.dirname(os.path.realpath(__file__)),
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True)
+            while not self.subprocess.poll():
+                self.log(self.subprocess.stdout.readline())
         except:
             self.log(traceback.format_exc())
 
