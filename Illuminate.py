@@ -6,6 +6,8 @@ import traceback
 import json
 import os.path
 import glob
+import math
+import time
 from pymodbus.client.sync import ModbusTcpClient
 
 # simple user model
@@ -24,12 +26,15 @@ settings_file = './settings.json'
 main_thread = None
 modbus_client = None
 
-temp_on_off = 'OFF'
+zone_selected_state = ["OFF"]
+debug_current_state = ["OFF"]
 
 settings = {
     'ip_address': '192.168.1.1',
     'tcp_port': 504,
     'zone_title1': 'Zone 1',
+    'zone1_timer_on':  '16:00',
+    'zone1_timer_off': '17:00',
     'username': 'admin',
     'password': 'password'
     }
@@ -52,6 +57,14 @@ login_manager.login_view = "route_login"
 # create the user       
 user = User(0)
 
+# TIme conversion functions
+def time_to_hrs(s):
+    h,m = s.split(':')
+    return int(h) + int(m)/60.0
+    
+def time_to_str(f):
+    return "%02d:%02d" % (int(f)%24, int(60*math.modf(f)[0]))
+
 
 def load_settings():
     global settings
@@ -61,19 +74,47 @@ def load_settings():
     except: pass
 
 def send_event_info():
-    global temp_on_off
-    if not DEBUG:
+    if DEBUG:
+        current_on_off = debug_current_state[0]
+    else:
         try:
             result = modbus_client.read_coils(17,1)
-            temp_on_off = "ON" if result.bits[0] else "OFF" 
+            current_on_off = "ON" if result.bits[0] else "OFF" 
+
         except:
             traceback.print_exc()
-            temp_on_off = "ERROR"
-    socketio.emit('update', {"zone1_status": temp_on_off}, namespace='/ws/zone1')
+            current_on_off = "ERROR"
+                    
+    socketio.emit('update', {"zone1_status": current_on_off, "zone1_auto": zone_selected_state[0]=="AUTO"}, namespace='/ws/zone1')
+    return current_on_off
 
 def main_thread_worker():
     while True:
-        send_event_info()
+        current_on_off = send_event_info()
+        
+        # If auto check against schedule
+        if (zone_selected_state[0]=="AUTO") :
+            on_duration = time_to_hrs(settings['zone1_timer_off']) - time_to_hrs(settings['zone1_timer_on'])
+            if on_duration < 0:
+                on_duration += 24
+                
+            hours_since_on_time = time_to_hrs(time.strftime("%H:%M")) - time_to_hrs(settings['zone1_timer_on'])
+            if hours_since_on_time < 0:
+                hours_since_on_time += 24
+                
+            timer_on_off = "ON" if (hours_since_on_time < on_duration) else "OFF"
+            
+            print ("on_duration = %05.2f, hours_since_on_time = %05.2f, timer_on_off = %s, current_on_off = %s" %
+                        (on_duration, hours_since_on_time, timer_on_off, current_on_off))
+            
+            if current_on_off != timer_on_off:
+                # Time to change
+                print ("    Turning", timer_on_off)
+                if timer_on_off == "ON":
+                    ws_turn_on()
+                else:
+                    ws_turn_off()
+
         socketio.sleep(2.0)    
                         
 @socketio.on('connect', namespace='/ws/zone1')
@@ -85,10 +126,12 @@ def ws_connect():
     send_event_info()
 
 @socketio.on('turn_on', namespace='/ws/zone1')
-def ws_turn_on(d):
-    global temp_on_off
+def ws_turn_on(d=None):
+    global debug_current_state, zone_selected_state
+    if d:
+        zone_selected_state[0] = "OFF"
     if DEBUG:
-        temp_on_off = "ON"
+        debug_current_state[0] = "ON"
     else:
         try:
             modbus_client.write_coil(17, True)
@@ -98,16 +141,26 @@ def ws_turn_on(d):
     send_event_info()
 
 @socketio.on('turn_off', namespace='/ws/zone1')
-def ws_turn_off(d):
-    global temp_on_off
+def ws_turn_off(d=None):
+    global debug_current_state, zone_selected_state
+    if d:
+        zone_selected_state[0] = "OFF"
     if DEBUG:
-        temp_on_off = "OFF"
+        debug_current_state[0] = "OFF"
     else:
         try:
             modbus_client.write_coil(17, False)
         except:
             traceback.print_exc()
     send_event_info()
+
+@socketio.on('turn_auto', namespace='/ws/zone1')
+def ws_turn_auto(d):
+    global zone_selected_state
+    zone_selected_state[0] = "AUTO"
+
+    send_event_info()
+        
         
 @app.route('/settings', methods=['POST', 'GET'])
 @flask_login.login_required

@@ -111,6 +111,29 @@ function password_check(form) {
     
     <div class="row"><div class="col-md-4"><form action="/settings" method="POST">
         <div class="input-group">
+            <label for="zone_title1">Zone 1 Timer</label>
+            <div class="input-group">
+                <input name="zone1_timer_on" 
+					type="time" 
+                    id="zone1_timer_on"
+                    value="{{ zone1_timer_on }}"  
+                    class="form-control" 
+                    oninput="document.getElementById('zone1_timer_submit').disabled=false;"></input>
+				<input name="zone1_timer_off" 
+					type="time" 
+                    id="zone1_timer_off"
+                    value="{{ zone1_timer_off }}"  
+                    class="form-control" 
+                    oninput="document.getElementById('zone1_timer_submit').disabled=false;"></input>
+                <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit" id="zone1_timer_submit" disabled>Update</button>
+                </span>
+            </div>
+        </div>
+    </form></div></div>
+
+    <div class="row"><div class="col-md-4"><form action="/settings" method="POST">
+        <div class="input-group">
             <label for="username">User Name</label>
             <div class="input-group">
                 <input name="username" 
