@@ -128,7 +128,7 @@ def ws_connect():
 @socketio.on('turn_on', namespace='/ws/zone1')
 def ws_turn_on(d=None):
     global debug_current_state, zone_selected_state
-    if d:
+    if d != None:
         zone_selected_state[0] = "OFF"
     if DEBUG:
         debug_current_state[0] = "ON"
@@ -143,7 +143,7 @@ def ws_turn_on(d=None):
 @socketio.on('turn_off', namespace='/ws/zone1')
 def ws_turn_off(d=None):
     global debug_current_state, zone_selected_state
-    if d:
+    if d != None:
         zone_selected_state[0] = "OFF"
     if DEBUG:
         debug_current_state[0] = "OFF"
